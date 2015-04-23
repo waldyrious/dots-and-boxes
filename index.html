@@ -86,6 +86,8 @@
 			scored = false;
 			// mark clicked line
 			line.style.backgroundColor = playerColor(currPlayer);
+			// deactivate further interactions
+			$(line).off("click");
 			// remove current coloring of the status element
 			$("#status").removeClass("player" + currPlayer);
 			// loop all squares and check if any new one got closed
@@ -113,8 +115,6 @@
 			lines++;
 			// wrap up game when it ends
 			if( lines == (sideLength*(sideLength+1))*2 ) {
-				// deactivate further interactions
-				$(".line").each( function() { $(this).off("click"); } );
 				var winner = (score[0] < score[1]) + 1;
 				if( score[0] == score[1] ) {
 					$("#status").text("Game over, the result is a tie!").css("color", "grey");
