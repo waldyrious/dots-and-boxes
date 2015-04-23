@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<title>Dots and Boxes</title>
+	<style>
+		#grid { overflow: hidden; } /* wrap around floated children */
+		#grid div { float: left; }
+		div.horiz.line { width: 2em; height: 0.5em; }
+		div.vert.line { height: 2em; width: 0.5em; }
+		div.line:hover { background-color: silver; }
+		div.dot { width: 0.5em; height: 0.5em; background-color: black; border-radius: 50%; }
+		#panel, .break { clear: left;}
+		div.box { width: 2em; height: 2em; text-align: center; line-height: 2em; }
+		#panel, #grid { margin: 2em 1em 0; }
+		body { font-family: sans-serif; }
+	</style>
+	<script src="http://code.jquery.com/jquery-2.1.3.js"></script>
+</head>
+<body>
+	<h2>Dots and Boxes</h2>
+	<div id="grid"></div>
+	<div id="panel">
+		<div id="status"></div>
+		<div id="score">
+			<h3>Score:</h3>
+			<ul>
+				<li><span class="player1">Player 1</span>: <span id="score-P1">0<span></li>
+				<li><span class="player2">Player 2</span>: <span id="score-P2">0<span></li>
+			</ul>
+		</div>
+	<script>
+		var sideLength = 4;
+		var currPlayer = 1;
+		var lines = 0;
+		var score = [0,0];
+		var squares = new Array(sideLength);
+		for (var i = 0; i < sideLength; i++) {
+			squares[i] = new Array(sideLength);
+		}
+		
+		// build grid
+		for(var i=0; i<=(sideLength*2); i++) {
+			for(var j=0; j<=(sideLength*2); j++) {
+				// both even: dot
+				if( isEven(i) && isEven(j) ) {
+					var dotClass = (j===0) ? "dot break" : "dot";
+					$("#grid").append("<div class='"+dotClass+"'></div>");
+				}
+				// even row, odd column: horizontal line
+				else if( isEven(i) && !isEven(j) ) {
+					$("#grid").append($("<div>", {
+						class:"line horiz",
+						id: "line-" + i + "x" + j,
+						click: function() { gameStep(this); }
+					}));
+				}
+				// odd row, even column: vertical line
+				else if( !isEven(i) && isEven(j) ) {
+					$("#grid").append($("<div>", {
+						class: (j===0) ? "line vert break" : "line vert",
+						id: "line-" + i + "x" + j,
+						click: function() { gameStep(this); }
+					}));
+				}
+				// odd row, odd column: box
+				else if( !isEven(i) && !isEven(j) ) {
+					$("#grid").append($("<div>", {
+						class: "box",
+						id: "box-" + i + "x" + j
+					}));
+				}
+			}
+		}
+		
+		// initialize status and colors
+		updateStatus();
+		$(".player1").css("color", playerColor(currPlayer));
+		$(".player2").css("color", playerColor(currPlayer+1));
+		
+		function updateStatus() {
+			$("#status").text("Your move, player "+ currPlayer + "!").css("color", playerColor(currPlayer));
+		}
+		
+		function gameStep(line) {
+			scored = false;
+			// mark clicked line
+			line.style.backgroundColor = playerColor(currPlayer);
+			// remove current coloring of the status element
+			$("#status").removeClass("player" + currPlayer);
+			// loop all squares and check if any new one got closed
+			for(var i=1; i<=(sideLength*2); i+=2) {
+				for(var j=1; j<=(sideLength*2); j+=2) {
+					var row = (i-1)/2, col = (j-1)/2;
+					// skip previously marked squares
+					if( typeof(squares[row][col]) !== "undefined" ) continue; 
+					// check the left, right, top and down edges
+					if( isMarked(i-1, j) && isMarked(i+1, j) && isMarked(i, j-1) && isMarked(i, j+1) ) {
+						squares[row][col] = true;
+						$("#box-" + i + "x" + j).text(currPlayer).css("color", playerColor(currPlayer));
+						// update scores
+						score[currPlayer-1]++;
+						$("#score-P" + currPlayer).text(score[currPlayer-1]);
+						scored = true;
+					}
+				}
+			}
+			// swap players (unless the current player earned an extra turn)
+			if(!scored) { currPlayer = (currPlayer++)%2 + 1; }
+			// update status and apply new color
+			updateStatus();
+			// increment number of lines already marked
+			lines++;
+			// wrap up game when it ends
+			if( lines == (sideLength*(sideLength+1))*2 ) {
+				// deactivate further interactions
+				$(".line").each( function() { $(this).off("click"); } );
+				var winner = (score[0] < score[1]) + 1;
+				if( score[0] == score[1] ) {
+					$("#status").text("Game over, the result is a tie!").css("color", "grey");
+				} else {
+					$("#status").text("Game over, player " + winner + " won!").css("color", playerColor(winner));
+				}
+				return;
+			}
+		}
+		
+		function isEven(n) { return !(n%2); }
+		
+		function playerColor(n) { return !isEven(n) ? "DeepSkyBlue" : "LightCoral"; }
+		
+		function isMarked(row, col) {
+			var color = $("#line-" + row + "x" + col).css("backgroundColor");
+			return color !== "transparent" && color !== "rgba(0, 0, 0, 0)";
+		}
+	</script>
+</body>
+</html>
